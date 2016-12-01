@@ -1009,11 +1009,11 @@ def generateEnvironment(config, mgr, lang, folders):
         scan_extra_dir = []
 
     scan_extra_dir.extend(config.get("codeintel_scan_extra_dir", []))
-    config["codeintel_scan_extra_dir"] = scan_extra_dir
+    config["codeintel_scan_extra_dir"] = [process_path_vars(d) for d in scan_extra_dir]
 
     for conf, p in config.items():
-        if isinstance(p, string_types) and p.startswith('~'):
-            config[conf] = os.path.expanduser(p)
+        if isinstance(p, string_types):
+            config[conf] = process_path_vars(p)
 
     # Setup environment variables
     # lang env settings
@@ -1021,11 +1021,7 @@ def generateEnvironment(config, mgr, lang, folders):
     # basis is os environment
     _environ = dict(os.environ)
     for k, v in env.items():
-        _old = None
-        while '$' in v and v != _old:
-            _old = v
-            v = os.path.expandvars(v)
-        _environ[k] = v
+        _environ[k] = process_path_vars(v)
     config['env'] = _environ
 
     env = SimplePrefsEnvironment(**config)
@@ -1035,6 +1031,15 @@ def generateEnvironment(config, mgr, lang, folders):
     env._folders = folders
 
     return env
+
+
+def process_path_vars(v):
+    v = os.path.expanduser(v) if v.startswith('~') else v
+    _old = None
+    while '$' in v and v != _old:
+        _old = v
+        v = os.path.expandvars(v)
+    return v
 
 
 def find_back(start_at, look_for):
